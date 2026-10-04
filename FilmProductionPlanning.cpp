@@ -2,6 +2,7 @@
 #include "Scene.h"
 #include "Actor.h"
 #include "Location.h"
+#include "Schedule.h"
 
 using namespace std;
 
@@ -18,6 +19,8 @@ int main()
     actor1.id = 1;
     actor1.name = "Anna";
     actor1.availableDays = { 1, 2, 4 };
+
+    scene1.actors.push_back(actor1);
 
     Location location1;
 
@@ -48,6 +51,25 @@ int main()
     }
 
     cout << "\n";
+
+    Schedule schedule1;
+
+    Schedule::Assignment assignment1;
+
+    assignment1.scene = scene1;
+    assignment1.day = 1;
+    assignment1.location = location1;
+
+    schedule1.assignments.push_back(assignment1);
+
+    if (schedule1.isValid())
+    {
+        cout << "Schedule is valid.\n";
+    }
+    else
+    {
+        cout << "Schedule is invalid.\n";
+    }
 
     return 0;
 }
