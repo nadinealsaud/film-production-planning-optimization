@@ -146,6 +146,7 @@
     <ClInclude Include="Location.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="Schedule.h" />
+    <ClInclude Include="Scheduler.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
