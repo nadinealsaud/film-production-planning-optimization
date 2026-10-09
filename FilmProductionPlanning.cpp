@@ -33,12 +33,18 @@ int main()
     location1.name = "Palace";
     location1.availableDays = { 1, 3, 4 };
 
+    Location location2;
+    location2.id = 2;
+    location2.name = "Studio";
+    location2.availableDays = { 2, 3 };
+
     vector<Scene> scenes;
     scenes.push_back(scene1);
     scenes.push_back(scene2);
 
     vector<Location> locations;
     locations.push_back(location1);
+    locations.push_back(location2);
 
     Schedule schedule1;
 
