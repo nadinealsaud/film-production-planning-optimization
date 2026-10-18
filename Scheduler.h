@@ -66,17 +66,20 @@ private:
 
         return count;
     }
+
 public:
     bool backtrack(
         Schedule& schedule,
         const vector<Scene>& scenes,
         const vector<Location>& locations,
-        int numberOfDays)
+        int numberOfDays,
+        bool useHeuristic = true)
     {
         if (schedule.assignments.size() == scenes.size())
         {
             return true;
         }
+
         int selectedIndex = -1;
         int fewestOptions = numeric_limits<int>::max();
 
@@ -98,6 +101,12 @@ public:
                 continue;
             }
 
+            if (!useHeuristic)
+            {
+                selectedIndex = i;
+                break;
+            }
+
             int options = countAvailableOptions(
                 scenes[i], locations, numberOfDays);
 
@@ -108,11 +117,11 @@ public:
             }
         }
 
-        if (selectedIndex == -1 || fewestOptions == 0)
+        if (selectedIndex == -1 ||
+            (useHeuristic && fewestOptions == 0))
         {
             return false;
         }
-
 
         const Scene& scene = scenes[selectedIndex];
 
@@ -121,7 +130,6 @@ public:
             for (const Location& location : locations)
             {
                 Schedule::Assignment assignment;
-
                 assignment.scene = scene;
                 assignment.day = day;
                 assignment.location = location;
@@ -130,7 +138,9 @@ public:
 
                 if (schedule.isValid())
                 {
-                    if (backtrack(schedule, scenes, locations, numberOfDays))
+                    if (backtrack(
+                        schedule, scenes, locations,
+                        numberOfDays, useHeuristic))
                     {
                         return true;
                     }

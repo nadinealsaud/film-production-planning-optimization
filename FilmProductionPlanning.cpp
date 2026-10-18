@@ -47,7 +47,8 @@ int main()
     scenes.push_back(createScene(6, 3, { actor1, actor2 }));
     scenes.push_back(createScene(7, 2, { actor2, actor3 }));
     scenes.push_back(createScene(8, 1, { actor1, actor3 }));
-
+    scenes.push_back(createScene(9, 2, { actor1, actor2 }));
+    scenes.push_back(createScene(10, 1, { actor2, actor3 }));
 
     Location location1;
     location1.id = 1;
@@ -70,7 +71,7 @@ int main()
     auto start = chrono::high_resolution_clock::now();
 
     bool foundSchedule =
-        scheduler.backtrack(schedule1, scenes, locations, 4);
+        scheduler.backtrack(schedule1, scenes, locations, 4, false);
 
     auto end = chrono::high_resolution_clock::now();
 
