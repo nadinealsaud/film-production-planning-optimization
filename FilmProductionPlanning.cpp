@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <chrono>
+#include "SimulatedAnnealing.cpp"
 #include "Scene.h"
 #include "Actor.h"
 #include "Location.h"
@@ -95,6 +96,47 @@ int main()
     }
 
     cout << "Runtime: " << runtime << " microseconds.\n";
+
+    SimulatedAnnealing annealing;
+
+    auto saStart = chrono::high_resolution_clock::now();
+
+    Schedule saResult = annealing.run(
+        schedule1, scenes, locations, 4);
+
+    auto saEnd = chrono::high_resolution_clock::now();
+
+    auto saRuntime =
+        chrono::duration_cast<chrono::microseconds>(
+            saEnd - saStart).count();
+
+    cout << "\nSimulated Annealing Result:\n";
+    cout << "Rental days: "
+        << annealing.getRentalDays(saResult) << "\n";
+
+    if (foundSchedule)
+    {
+        cout << "Schedule valid: "
+            << (saResult.isValid() ? "Yes" : "No") << "\n";
+
+        cout << "Runtime: " << saRuntime
+            << " microseconds.\n";
+
+        cout << "Assignments: "
+            << saResult.assignments.size() << "\n";
+
+        for (const Schedule::Assignment& assignment :
+            saResult.assignments)
+        {
+            cout << "Scene " << assignment.scene.id
+                << " is scheduled on day " << assignment.day
+                << " at " << assignment.location.name << ".\n";
+        }
+    }
+    else
+    {
+        cout << "Skipped: backtracking did not find a starting schedule.\n";
+    }
 
     return 0;
 }
