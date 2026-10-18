@@ -1,11 +1,71 @@
 #pragma once
 #include "Schedule.h"
 #include <vector>
+#include <limits>
 
 using namespace std;
 
 class Scheduler
 {
+private:
+    int countAvailableOptions(
+        const Scene& scene,
+        const vector<Location>& locations,
+        int numberOfDays)
+    {
+        int count = 0;
+
+        for (int day = 1; day <= numberOfDays; day++)
+        {
+            for (const Location& location : locations)
+            {
+                bool locationAvailable = false;
+
+                for (int availableDay : location.availableDays)
+                {
+                    if (availableDay == day)
+                    {
+                        locationAvailable = true;
+                        break;
+                    }
+                }
+
+                if (!locationAvailable)
+                {
+                    continue;
+                }
+
+                bool allActorsAvailable = true;
+
+                for (const Actor& actor : scene.actors)
+                {
+                    bool actorAvailable = false;
+
+                    for (int availableDay : actor.availableDays)
+                    {
+                        if (availableDay == day)
+                        {
+                            actorAvailable = true;
+                            break;
+                        }
+                    }
+
+                    if (!actorAvailable)
+                    {
+                        allActorsAvailable = false;
+                        break;
+                    }
+                }
+
+                if (allActorsAvailable)
+                {
+                    count++;
+                }
+            }
+        }
+
+        return count;
+    }
 public:
     bool backtrack(
         Schedule& schedule,
@@ -17,8 +77,44 @@ public:
         {
             return true;
         }
+        int selectedIndex = -1;
+        int fewestOptions = numeric_limits<int>::max();
 
-        const Scene& scene = scenes[schedule.assignments.size()];
+        for (int i = 0; i < static_cast<int>(scenes.size()); i++)
+        {
+            bool alreadyAssigned = false;
+
+            for (const Schedule::Assignment& assignment : schedule.assignments)
+            {
+                if (assignment.scene.id == scenes[i].id)
+                {
+                    alreadyAssigned = true;
+                    break;
+                }
+            }
+
+            if (alreadyAssigned)
+            {
+                continue;
+            }
+
+            int options = countAvailableOptions(
+                scenes[i], locations, numberOfDays);
+
+            if (options < fewestOptions)
+            {
+                fewestOptions = options;
+                selectedIndex = i;
+            }
+        }
+
+        if (selectedIndex == -1 || fewestOptions == 0)
+        {
+            return false;
+        }
+
+
+        const Scene& scene = scenes[selectedIndex];
 
         for (int day = 1; day <= numberOfDays; day++)
         {
