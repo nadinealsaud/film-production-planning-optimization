@@ -1,8 +1,8 @@
-
 #include <vector>
 #include <cstdlib>
 #include <ctime>
 #include <cmath>
+#include <iostream>
 #include "Schedule.h"
 #include "Scene.h"
 #include "Location.h"
@@ -60,15 +60,16 @@ public:
             locations.empty() || numberOfDays <= 0)
             return initialSchedule;
 
-        srand(static_cast<unsigned int>(time(nullptr)));
 
         Schedule current = initialSchedule;
         Schedule best = current;
 
         double temperature = 100.0;
-        const double coolingRate = 0.95;
+        const double coolingRate = 0.999;
+        const int maxIterations = 1000;
+        int iteration = 0;
 
-        while (temperature > 0.1)
+        while (temperature > 0.1 && iteration < maxIterations)
         {
             Schedule neighbor = current;
 
@@ -95,6 +96,7 @@ public:
                 best = current;
 
             temperature *= coolingRate;
+            iteration++;
         }
 
         return best;
