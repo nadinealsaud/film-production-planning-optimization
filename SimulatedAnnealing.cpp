@@ -54,7 +54,9 @@ public:
         const Schedule& initialSchedule,
         const vector<Scene>& scenes,
         const vector<Location>& locations,
-        int numberOfDays)
+        int numberOfDays,
+        double coolingRate = 0.999,
+        int maxIterations = 1000)
     {
         if (initialSchedule.assignments.empty() ||
             locations.empty() || numberOfDays <= 0)
@@ -65,8 +67,6 @@ public:
         Schedule best = current;
 
         double temperature = 100.0;
-        const double coolingRate = 0.999;
-        const int maxIterations = 1000;
         int iteration = 0;
 
         while (temperature > 0.1 && iteration < maxIterations)

@@ -178,6 +178,9 @@ int main()
     long long totalAnnealingTime = 0;
     long long totalBacktrackingRentalDays = 0;
     long long totalAnnealingRentalDays = 0;
+    int minAnnealingRentalDays = 999999;
+    int maxAnnealingRentalDays = 0;
+    int successfulRuns = 0;
 
     for (int i = 0; i < 20; i++)
     {
@@ -189,6 +192,7 @@ int main()
 
         if (!testFound)
             continue;
+        successfulRuns++;
 
         auto endBT = chrono::high_resolution_clock::now();
         totalBacktrackingTime +=
@@ -221,23 +225,275 @@ int main()
         Schedule testSA = annealing.run(testSchedule, scenes, locations, 4);
         auto endSA = chrono::high_resolution_clock::now();
 
-        totalAnnealingRentalDays += annealing.getRentalDays(testSA);
+        int saRentalDays = annealing.getRentalDays(testSA);
+
+        totalAnnealingRentalDays += saRentalDays;
+
+        if (saRentalDays < minAnnealingRentalDays)
+            minAnnealingRentalDays = saRentalDays;
+
+        if (saRentalDays > maxAnnealingRentalDays)
+            maxAnnealingRentalDays = saRentalDays;
 
         totalAnnealingTime +=
             chrono::duration_cast<chrono::microseconds>(
                 endSA - startSA).count();
     }
 
-    cout << "Average backtracking runtime: "
-        << totalBacktrackingTime / 20 << " microseconds\n";
+    cout << "Successful benchmark runs: " << successfulRuns << "\n";
 
-    cout << "Average simulated annealing runtime: "
-        << totalAnnealingTime / 20 << " microseconds\n";
+    if (successfulRuns > 0)
+    {
+        cout << "Average backtracking runtime: "
+            << totalBacktrackingTime / successfulRuns
+            << " microseconds\n";
 
-    cout << "Average backtracking rental days: "
-        << totalBacktrackingRentalDays / 20.0 << "\n";
+        cout << "Average simulated annealing runtime: "
+            << totalAnnealingTime / successfulRuns
+            << " microseconds\n";
 
-    cout << "Average simulated annealing rental days: "
-        << totalAnnealingRentalDays / 20.0 << "\n";
+        cout << "Average backtracking rental days: "
+            << totalBacktrackingRentalDays /
+            static_cast<double>(successfulRuns) << "\n";
+
+        cout << "Average simulated annealing rental days: "
+            << totalAnnealingRentalDays /
+            static_cast<double>(successfulRuns) << "\n";
+
+        cout << "Minimum simulated annealing rental days: "
+            << minAnnealingRentalDays << "\n";
+
+        cout << "Maximum simulated annealing rental days: "
+            << maxAnnealingRentalDays << "\n";
+    }
+    cout << "\n--- Cooling Rate Experiment ---\n";
+
+    vector<double> coolingRates = { 0.99, 0.995, 0.999 };
+
+    for (double rate : coolingRates)
+    {
+        long long totalRuntime = 0;
+        long long totalRentalDays = 0;
+
+        int minRentalDays = 999999;
+        int maxRentalDays = 0;
+        int validRuns = 0;
+
+        for (int i = 0; i < 20; i++)
+        {
+            auto startSA = chrono::high_resolution_clock::now();
+
+            Schedule result = annealing.run(
+                schedule1, scenes, locations, 4, rate, 500);
+
+            auto endSA = chrono::high_resolution_clock::now();
+
+            long long runtime =
+                chrono::duration_cast<chrono::microseconds>(
+                    endSA - startSA).count();
+
+            totalRuntime += runtime;
+
+            if (result.isValid())
+            {
+                validRuns++;
+
+                int rentalDays = annealing.getRentalDays(result);
+
+                totalRentalDays += rentalDays;
+
+                if (rentalDays < minRentalDays)
+                    minRentalDays = rentalDays;
+
+                if (rentalDays > maxRentalDays)
+                    maxRentalDays = rentalDays;
+            }
+        }
+
+        cout << "\nCooling rate: " << rate << "\n";
+        cout << "Valid runs: " << validRuns << "/20\n";
+        cout << "Average runtime: "
+            << totalRuntime / 20 << " microseconds\n";
+
+        if (validRuns > 0)
+        {
+            cout << "Average rental days: "
+                << totalRentalDays / static_cast<double>(validRuns)
+                << "\n";
+
+            cout << "Minimum rental days: "
+                << minRentalDays << "\n";
+
+            cout << "Maximum rental days: "
+                << maxRentalDays << "\n";
+        }
+    }
+    cout << "\n--- Exhaustive Search Experiment ---\n";
+
+    vector<Scene> smallScenes(
+        scenes.begin(), scenes.begin() + 5);
+
+    auto exhaustiveStart = chrono::high_resolution_clock::now();
+
+    Schedule optimalSchedule = scheduler.exhaustiveSearch(
+        smallScenes, locations, 4);
+
+    auto exhaustiveEnd = chrono::high_resolution_clock::now();
+
+    auto exhaustiveRuntime =
+        chrono::duration_cast<chrono::microseconds>(
+            exhaustiveEnd - exhaustiveStart).count();
+
+    cout << "Number of scenes: " << smallScenes.size() << "\n";
+    cout << "Valid schedules explored: "
+        << scheduler.getValidScheduleCount() << "\n";
+
+    cout << "Minimum rental days found: "
+        << scheduler.getBestRentalDays() << "\n";
+
+    cout << "Schedule valid: "
+        << (optimalSchedule.isValid() ? "Yes" : "No") << "\n";
+
+    cout << "Runtime: " << exhaustiveRuntime
+        << " microseconds\n";
+    cout << "\n--- Five-Scene Algorithm Comparison ---\n";
+
+    Schedule smallBTSchedule;
+
+    bool smallBTFound = scheduler.backtrack(
+        smallBTSchedule, smallScenes, locations, 4, false);
+
+    cout << "Backtracking found schedule: "
+        << (smallBTFound ? "Yes" : "No") << "\n";
+
+    if (smallBTFound)
+    {
+        cout << "Backtracking rental days: "
+            << annealing.getRentalDays(smallBTSchedule) << "\n";
+    }
+
+    Schedule smallSAResult;
+
+    if (smallBTFound)
+    {
+        smallSAResult = annealing.run(
+            smallBTSchedule, smallScenes, locations, 4);
+
+        cout << "Simulated Annealing valid: "
+            << (smallSAResult.isValid() ? "Yes" : "No") << "\n";
+
+        cout << "Simulated Annealing rental days: "
+            << annealing.getRentalDays(smallSAResult) << "\n";
+    }
+
+    cout << "Exhaustive search minimum rental days: "
+        << scheduler.getBestRentalDays() << "\n";
+    cout << "\n--- Simulated Annealing Improvement Test ---\n";
+
+    Schedule inefficientSchedule;
+
+    Schedule::Assignment a1;
+    a1.scene = smallScenes[0];
+    a1.day = 1;
+    a1.location = locations[0];
+    inefficientSchedule.assignments.push_back(a1);
+
+    Schedule::Assignment a2;
+    a2.scene = smallScenes[1];
+    a2.day = 2;
+    a2.location = locations[1];
+    inefficientSchedule.assignments.push_back(a2);
+
+    Schedule::Assignment a3;
+    a3.scene = smallScenes[2];
+    a3.day = 3;
+    a3.location = locations[0];
+    inefficientSchedule.assignments.push_back(a3);
+
+    Schedule::Assignment a4;
+    a4.scene = smallScenes[3];
+    a4.day = 4;
+    a4.location = locations[0];
+    inefficientSchedule.assignments.push_back(a4);
+
+    Schedule::Assignment a5;
+    a5.scene = smallScenes[4];
+    a5.day = 3;
+    a5.location = locations[1];
+    inefficientSchedule.assignments.push_back(a5);
+
+    cout << "Starting schedule valid: "
+        << (inefficientSchedule.isValid() ? "Yes" : "No") << "\n";
+
+    cout << "Starting rental days: "
+        << annealing.getRentalDays(inefficientSchedule) << "\n";
+
+    Schedule improvedSchedule = annealing.run(
+        inefficientSchedule, smallScenes, locations, 4);
+
+    cout << "Improved schedule valid: "
+        << (improvedSchedule.isValid() ? "Yes" : "No") << "\n";
+
+    cout << "Rental days after Simulated Annealing: "
+        << annealing.getRentalDays(improvedSchedule) << "\n";
+
+    cout << "Exhaustive search minimum: "
+        << scheduler.getBestRentalDays() << "\n";
+    cout << "\n--- Repeated Improvement Experiment: 20 Runs ---\n";
+
+    int validImprovementRuns = 0;
+    int successfulImprovementRuns = 0;
+    int optimalRuns = 0;
+
+    long long totalImprovementRuntime = 0;
+    long long totalImprovementRentalDays = 0;
+
+    for (int i = 0; i < 20; i++)
+    {
+        auto start = chrono::high_resolution_clock::now();
+
+        Schedule result = annealing.run(
+            inefficientSchedule, smallScenes, locations, 4);
+
+        auto end = chrono::high_resolution_clock::now();
+
+        totalImprovementRuntime +=
+            chrono::duration_cast<chrono::microseconds>(
+                end - start).count();
+
+        if (result.isValid())
+        {
+            validImprovementRuns++;
+
+            int rentalDays = annealing.getRentalDays(result);
+
+            totalImprovementRentalDays += rentalDays;
+
+            if (rentalDays < 5)
+                successfulImprovementRuns++;
+
+            if (rentalDays == scheduler.getBestRentalDays())
+                optimalRuns++;
+        }
+    }
+
+    cout << "Valid runs: " << validImprovementRuns << "/20\n";
+
+    cout << "Runs that improved on the starting schedule: "
+        << successfulImprovementRuns << "/20\n";
+
+    cout << "Runs that reached the optimal result: "
+        << optimalRuns << "/20\n";
+
+    if (validImprovementRuns > 0)
+    {
+        cout << "Average rental days: "
+            << totalImprovementRentalDays /
+            static_cast<double>(validImprovementRuns) << "\n";
+
+        cout << "Average runtime: "
+            << totalImprovementRuntime /
+            validImprovementRuns << " microseconds\n";
+    }
     return 0;
 }
